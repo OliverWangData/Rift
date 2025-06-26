@@ -1,0 +1,10 @@
+When the following conditions are true:
+
+	- Module is using Google Highway's external module
+	- Module has non-inline functions with vector arguments
+	- Module is being built with MSVC
+	
+Then the compiler flag /Gv should be passed to the module that is using the
+Google Highway external module.
+
+See: https://google.github.io/highway/en/master/README.html#compiler-flags

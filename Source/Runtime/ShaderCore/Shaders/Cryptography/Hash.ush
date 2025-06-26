@@ -1,0 +1,43 @@
+#pragma once
+
+#include "../Numerics/FixedPointOperations.ush"
+
+inline uint Scramble(uint n)
+{
+    n = FP_Mul(n ^ (n >> 31), 0xC2B2AE63U);
+    n = FP_Mul(n ^ (n >> 29), 0x133111EBU);
+    n = FP_Mul(n ^ (n >> 30), 0x1550D39FU);
+    return n;
+}
+
+inline uint Hash(uint a)
+{
+    uint n = FP_Mul(a, 0x6C078965U);
+    return Scramble(n);
+}
+
+inline uint Hash(uint a, uint b)
+{
+    uint n = FP_Mul(a, 0x27220A95U) + FP_Mul(b, 0x190DCD52U);
+    return Scramble(n);
+}
+
+inline uint Hash(uint a, uint b, uint c)
+{
+    uint n = FP_Mul(a, 0x6C078965U) + FP_Mul(b, 0xB79C54C3U) + FP_Mul(c, 0x1550D39FU);
+    return Scramble(n);
+}
+
+inline uint Hash(uint a, uint b, uint c, uint d)
+{
+    uint n = FP_Mul(a, 0xF8D5C67BU) + FP_Mul(b, 0xB9BF5847U) + FP_Mul(c, 0x6C078965U) +
+    FP_Mul(d, 0x7F4A7C15U);
+    return Scramble(n);
+}
+
+inline uint Hash(uint a, uint b, uint c, uint d, uint e)
+{
+    uint n = FP_Mul(a, 0x7F3B2F81U) + FP_Mul(b, 0x7F4A7C15U) + FP_Mul(c, 0x6C078965U) +
+    FP_Mul(d, 0xB79C54C3U) + FP_Mul(e, 0xF8D5C67BU);
+    return Scramble(n);
+}

@@ -1,0 +1,29 @@
+
+
+float CMSpacing;
+
+struct FVertexFactoryInput
+{
+    int2 PackedComponent0 : ATTRIBUTE0;
+    int2 PackedComponent1 : ATTRIBUTE1;
+    uint VertexId : SV_VertexID;
+};
+
+struct FPositionOnlyVertexFactoryInput
+{
+    int2 PackedComponent0 : ATTRIBUTE0;
+    uint VertexId : SV_VertexID;
+};
+
+struct FPositionAndNormalOnlyVertexFactoryInput
+{
+    int2 PackedComponent0 : ATTRIBUTE0;
+    int2 PackedComponent1 : ATTRIBUTE1;
+    uint VertexId : SV_VertexID;
+};
+
+struct FVertexFactoryInterpolantsVSToPS
+{
+    half4 Color : COLOR0;
+};
+

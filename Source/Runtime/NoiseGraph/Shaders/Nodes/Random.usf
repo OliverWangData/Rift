@@ -1,0 +1,13 @@
+
+
+#pragma once
+
+RWStructuredBuffer<int3> Coordinates;
+RWStructuredBuffer<int> Output;
+
+[numthreads(256, 1, 1)]
+void Main(uint3 ThreadId : SV_DispatchThreadID)
+{
+    int i = ThreadId.x;
+    
+}

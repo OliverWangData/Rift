@@ -1,0 +1,234 @@
+#pragma once
+
+// Q16_16 metadata
+const int FP_BITS_SIZE = 32;
+const int FP_FRACTION_SIZE = 16;
+const int FP_FRACTION_MASK = 0x0000FFFF;
+const int FP_INTEGER_MASK = 0xFFFF0000;
+
+const int FP_EXPONENT_SIZE = 8;
+const int FP_EXPONENT_MASK = 0x7F800000;
+const int FP_EXPONENT_BIAS = 127;
+
+const int FP_MANTISSA_SIZE = 23;
+const int FP_MANTISSA_MASK = 0x007FFFFF;
+
+// Constants
+const int FP_ONE            = 1 << FP_FRACTION_SIZE;
+const int FP_MAX            = 0x7FFFFFFF;
+const int FP_MIN            = 0x80000000;
+const int FP_PI             = 0x0003243F; // 0000 0000 0000 0011 0010 0100 0011 1111
+const int FP_SQRT2          = 0x00016A09; // 0000 0000 0000 0001 0110 1010 0000 1001
+const int FP_SQRT3          = 0x0001BB67; // 0000 0000 0000 0001 1011 1011 0110 0111
+const int FP_INVSQRT2       = 0x0000B504; // 0000 0000 0000 0000 1011 0101 0000 0100
+const int FP_INVSQRT3       = 0x000093B4; // 0000 0000 0000 0000 1001 0011 1011 0100
+const int FP_SQRT_2ADDSQRT2 = 0x0001DBC4; // 0000 0000 0000 0001 1101 1011 1100 0100
+const int FP_SQRT_2SUBSQRT2 = 0x0000C4E5; // 0000 0000 0000 0000 1100 0100 1110 0101
+
+// *************************************************************************************************
+// Conversions
+
+// Wrap Overflow
+inline int FP(int n)
+{
+    return n * FP_ONE;
+}
+
+inline int FP(float n)
+{
+    int bits = asint(n);
+    int exponent = (bits & FP_EXPONENT_MASK) >> FP_MANTISSA_SIZE;
+    int value = bits & FP_MANTISSA_MASK;
+
+    // Sets the leading 1 in the mantissa
+    if (exponent != 0)
+    {
+        value |= (1 << FP_MANTISSA_SIZE);
+    }
+    
+    // If the number is negative, handle two's complement conversion
+    if (bits & (1 << (FP_BITS_SIZE - 1)))
+    {
+        value = ~value + 1;
+    }
+
+    // Shift the mantissa so that the decimal lines up with Q16_16, then applies the exponent
+    int shift = (FP_FRACTION_SIZE - FP_MANTISSA_SIZE) + (exponent - FP_EXPONENT_BIAS);
+    return (shift >= 0) ? value << shift : value >> -shift;
+    
+}
+
+inline int FP_Int(int n)
+{
+    // Similar to (n + 0.5 >> F), but accounts for the case where n + 0.5 would overflow
+    return ((n >> 1) + (FP_ONE >> 2)) >> (FP_FRACTION_SIZE - 1);
+}
+
+inline float FP_Float(int n)
+{
+    return ((float) n) / FP_ONE;
+}
+
+
+// *************************************************************************************************
+// Arithmetics
+inline int FP_Mul(int a, int b)
+{
+    int a_upper = a >> FP_FRACTION_SIZE;
+    int b_upper = b >> FP_FRACTION_SIZE;
+    int a_lower = a & FP_FRACTION_MASK;
+    int b_lower = b & FP_FRACTION_MASK;
+
+    int x1 = a_upper * b_upper;
+    int x2 = a_upper * b_lower;
+    int x3 = a_lower * b_upper;
+    int x4 = a_lower * b_lower;
+    
+    return (x1 << FP_FRACTION_SIZE) + x2 + x3 + ((x4 >> FP_FRACTION_SIZE) & FP_FRACTION_MASK);
+}
+
+// TODO: Verify
+inline int FP_Div(int a, int b)
+{
+    int sign = 0;
+    
+    // Keep track of sign, and make both a and b positive
+    if (a < 0)
+    {
+        sign ^= 1;
+        a = -a;
+    }
+    
+    if (b < 0)
+    {
+        sign ^= 1;
+        b = -b;
+    }
+    
+    int scaling = 1;
+    int quotient = 0;
+    int b2 = b;
+    
+    // Egyptian division algorithm: find the quotient by repeatedly doubling the denominator
+    // and subtracting from the numerator
+    while ((a >= b) && (((b >> (FP_BITS_SIZE - 1)) & 1) == 0))
+    {
+        scaling <<= 1;
+        b <<= 1;
+    }
+    
+    // Now proceed with the division process
+    while (scaling != 0)
+    {
+        if (a >= b)
+        {
+            a -= b;
+            quotient += scaling;
+        }
+
+        scaling >>= 1;
+        b >>= 1;
+    }
+
+    int remainder = a;
+    
+    // Handle the fractional part
+    while (remainder >> (FP_BITS_SIZE - FP_FRACTION_SIZE) > 0)
+    {
+        remainder >>= 1;
+        b2 >>= 1;
+    }
+    
+    // Calculate the lower bits of the quotient
+    int fraction = (remainder << FP_FRACTION_SIZE) / b2;
+    
+    // Combine the integer and fractional parts of the quotient
+    quotient = ((quotient << FP_FRACTION_SIZE) | fraction);
+
+    if (sign)
+    {
+        quotient = -quotient;
+    }
+    
+    return quotient;
+}
+
+// *************************************************************************************************
+// Math
+
+inline int FP_Round(int n)
+{
+    return (n + (FP_ONE >> 1)) & FP_INTEGER_MASK;
+}
+
+inline int FP_Ceil(int n)
+{
+    return (n & FP_INTEGER_MASK) + ((n >> (FP_BITS_SIZE - 1)) << FP_FRACTION_SIZE);
+}
+
+inline int FP_Floor(int n)
+{
+    return (n & FP_INTEGER_MASK) - ((n >> (FP_BITS_SIZE - 1)) << FP_FRACTION_SIZE);
+}
+
+inline int FP_Square(int n)
+{
+    return FP_Mul(n, n);
+}
+
+
+int FP_Inv(int n, int iterations = 4)
+{
+    // Use bit shifting to get the closest "power of 2" reciprocal as first guess
+    int shift = 16 - countbits(n);
+    int k = (shift < 0) ? n << -shift : n >> shift;
+    
+    for (int i = 0; i < iterations; i++)
+    {
+        k = FP_Mul(k, 2 - FP_Mul(n, k));
+    }
+
+    return k;
+}
+
+// Neuton-Raphson Method
+inline int FP_Sqrt(int n, int iterations = 8)
+{
+    int k = n >> 1; // First guess is n / 2
+    
+    for (int i = 0; i < iterations; i++)
+    {
+        k = (k + FP_Div(n, k)) >> 1;
+    }
+    
+    return k;
+
+}
+
+// Neuton-Raphson Method
+// Iterative step is:
+// kn+1 = kn - (kn^[N] - x) / (N * kn^[N-1])
+inline int FP_SqrtN(int value, int n, int iterations = 8)
+{
+    int k = value >> 1; // First guess is n / 2
+    
+    for (int i = 0; i < iterations; i++)
+    {
+        // k^[N-1]
+        int KPower = k;
+        for (int j = 0; j < n - 1; j++)
+        {
+            KPower = FP_Mul(KPower, k);
+        }
+
+        k = k - FP_Div(FP_Mul(KPower, k) - value, n * KPower);
+    }
+
+    return k;
+}
+
+
+inline int FP_Lerp(int a, int b, int t)
+{
+    return FP_Mul(b - a, t) + a;
+}

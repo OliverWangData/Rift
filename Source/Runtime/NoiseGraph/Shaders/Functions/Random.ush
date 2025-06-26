@@ -1,0 +1,18 @@
+#pragma once
+
+#include "E:/Unreal/Rift/Source/Runtime/ShaderCore/Shaders/Cryptography/Hash.ush"
+
+inline int Random(int x, int y, int seed)
+{
+    return asint(Hash(asuint(x), asuint(y), asuint(seed)));
+}
+
+inline int Random(int x, int y, int z, int seed)
+{
+    return asint(Hash(asuint(x), asuint(y), asuint(z), asuint(seed)));
+}
+
+inline int Random(int x, int y, int z, int w, int seed)
+{
+    return asint(Hash(asuint(x), asuint(y), asuint(z), asuint(w), asuint(seed)));
+}

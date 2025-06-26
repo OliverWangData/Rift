@@ -1,0 +1,31 @@
+# Ignore Unreal project-generated files and directories
+*.sln
+*.vsconfig
+*.vcxproj*
+.vs/
+.idea/
+
+# Ignore all non-essential UE4/UE5 directories
+Art/
+Binaries/
+Builds/
+DerivedDataCache/
+Intermediate/
+Libraries/
+Programs/
+Saved/
+
+# Ignore developer-specific content folders
+Content/Developers/*
+
+# Temporary and backup files
+*.log
+*.bak
+*.tmp
+
+# Python virtual environments
+venv/
+__pycache__/
+
+#Temporarily ignore until we figure out a better solution for binaries
+# *.uasset

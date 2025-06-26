@@ -1,0 +1,70 @@
+#pragma once
+
+#include "E:/Unreal/Rift/Source/Runtime/ShaderCore/Shaders/Numerics/FixedPointOperations.ush"
+#include "Random.ush"
+
+inline int PerlinDotGradient(int x, int y, int ix, int iy, int seed)
+{
+    const int2 unitTable[16] =
+    {
+        // Cardinals
+        int2(FP_ONE,                    0),                         // 0
+        int2(0,                         FP_ONE),                    // 90
+        int2(-FP_ONE,                   0),                         // 180
+        int2(0,                         -FP_ONE),                   // 270
+        
+        //Diagonals
+        int2(FP_SQRT2 >> 1,             FP_SQRT2 >> 1),             // 45
+        int2(-FP_SQRT2 >> 1,            FP_SQRT2 >> 1),             // 135
+        int2(-FP_SQRT2 >> 1,            -FP_SQRT2 >> 1),            // 225
+        int2(FP_SQRT2 >> 1,             -FP_SQRT2 >> 1),            // 315
+        
+        // 22.5 Degree increments
+        int2(FP_SQRT_2ADDSQRT2 >> 1,    FP_SQRT_2SUBSQRT2 >> 1),    // 22.5
+        int2(FP_SQRT_2SUBSQRT2 >> 1,    FP_SQRT_2ADDSQRT2 >> 1),    // 67.5
+        int2(-FP_SQRT_2SUBSQRT2 >> 1,   FP_SQRT_2ADDSQRT2 >> 1),    // 112.5
+        int2(-FP_SQRT_2ADDSQRT2 >> 1,   FP_SQRT_2SUBSQRT2 >> 1),    // 157.5
+        int2(-FP_SQRT_2ADDSQRT2 >> 1,   -FP_SQRT_2SUBSQRT2 >> 1),   // 202.5
+        int2(-FP_SQRT_2SUBSQRT2 >> 1,   -FP_SQRT_2ADDSQRT2 >> 1),   // 247.5
+        int2(FP_SQRT_2SUBSQRT2 >> 1,    -FP_SQRT_2ADDSQRT2 >> 1),   // 292.5
+        int2(FP_SQRT_2ADDSQRT2 >> 1,    -FP_SQRT_2SUBSQRT2 >> 1)    // 337.5
+    };
+    
+    int dx = x - ix;
+    int dy = y - iy;
+    int idx = Random(ix, iy, seed) & 15;
+    return (dx * unitTable[idx].x) + (dy * unitTable[idx].y);
+}
+
+inline int PerlinFade(int t)
+{
+    int t2 = FP_Mul(t, t);
+    int t3 = FP_Mul(t2, t);
+    
+    return FP_Mul(t3, FP_Mul(FP(6), t2) - FP_Mul(FP(15), t) + FP(10));
+}
+
+inline int Perlin(int x, int y, int seed)
+{
+    int x0 = FP_Floor(x);
+    int y0 = FP_Floor(y);
+    int x1 = x0 + FP_ONE;
+    int y1 = y0 + FP_ONE;
+
+    int d00 = PerlinDotGradient(x, y, x0, y0, seed);
+    int d01 = PerlinDotGradient(x, y, x0, y1, seed);
+    int d10 = PerlinDotGradient(x, y, x1, y0, seed);
+    int d11 = PerlinDotGradient(x, y, x1, y1, seed);
+    
+    int xf = PerlinFade(x - x0);
+    int yf = PerlinFade(y - y0);
+    
+    int d0010 = FP_Lerp(d00, d10, xf);
+    int d0111 = FP_Lerp(d01, d11, xf);
+    
+	// Result falls in range [-sqrt(N/4), sqrt(N/4)] where N is the dimension.
+	// See: https://digitalfreepen.com/2017/06/20/range-perlin-noise.html
+    int result = FP_Lerp(d0010, d0111, yf);
+    result = FP_Mul(result, FP_SQRT2);
+    return (result + FP_ONE) >> 1;
+}

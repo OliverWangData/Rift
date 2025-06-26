@@ -1,0 +1,36 @@
+#pragma once
+
+inline int Length(int sizeX, int sizeY)
+{
+    return sizeX * sizeY;
+}
+
+inline int Length(int sizeX, int sizeY, int sizeZ)
+{
+    return sizeX * sizeY * sizeZ;
+}
+
+inline int Flatten(int x, int y, int sizeX)
+{
+    return (y * sizeX) + x;
+}
+
+inline int Flatten(int x, int y, int z, int sizeX, int sizeY)
+{
+    return (z * sizeX * sizeY) + (y * sizeX) + x;
+}
+
+inline void Unravel(int index, int sizeX, out int x, out int y)
+{
+    y = index / sizeX;
+    x = index % sizeX;
+}
+
+inline void Unravel(int index, int sizeX, int sizeY, out int x, out int y, out int z)
+{
+    int sizeXY = sizeX * sizeY;
+    int countTop = index % sizeXY;
+    z = index / sizeXY;
+    y = countTop / sizeX;
+    x = countTop % sizeX;
+}
