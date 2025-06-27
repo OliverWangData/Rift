@@ -12,3 +12,7 @@ Key features include:
 - Deterministic algorithms suitable for multiplayer synchronization
 
 This project demonstrates advanced C++ and algorithmic expertise in real-time procedural generation, voxel management, and rendering optimization.
+
+
+Long demo showcase of the workflow for the noise graph:
+https://www.youtube.com/watch?v=kAbr6sMtY1I
